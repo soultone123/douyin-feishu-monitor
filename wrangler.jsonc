@@ -1,13 +1,13 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "douyin-feishu-monitor",
-  "main": "src/index.js",
+  "main": "index.js",
   "compatibility_date": "2026-08-13",
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "douyin-feishu-messages",
-      "database_id": "REPLACE_AFTER_CREATING_D1"
+      "database_id": "1605fd7a-09e8-4c1b-ae99-7d65827e7767"
     }
   ]
 }
