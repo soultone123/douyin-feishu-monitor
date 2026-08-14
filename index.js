@@ -140,11 +140,6 @@ function getChallenge(payload) {
 
 async function handleWebhook(request, env, ctx) {
   const rawBody = await request.text();
-  const signature = request.headers.get("x-douyin-signature") || "";
-  if (!(await verifyDouyinSignature(rawBody, signature, env.DOUYIN_CLIENT_SECRET))) {
-    return json({ error: "invalid_signature" }, 401);
-  }
-
   let payload;
   try {
     payload = JSON.parse(rawBody);
@@ -154,6 +149,10 @@ async function handleWebhook(request, env, ctx) {
 
   if (payload.event === "verify_webhook") {
     return json({ challenge: getChallenge(payload) });
+  }
+  const signature = request.headers.get("x-douyin-signature") || "";
+  if (!(await verifyDouyinSignature(rawBody, signature, env.DOUYIN_CLIENT_SECRET))) {
+    return json({ error: "invalid_signature" }, 401);
   }
   if (payload.event !== "im_receive_msg") {
     return json({ ok: true, ignored: true });
