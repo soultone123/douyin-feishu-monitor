@@ -135,7 +135,10 @@ async function deliverAndRecord(env, dedupeKey, payload) {
 
 function getChallenge(payload) {
   const content = parseJsonValue(payload.content);
-  return content && typeof content === "object" ? content.challenge : undefined;
+  if (content && typeof content === "object") {
+    return content.challenge ?? content.CHALLENGE;
+  }
+  return payload.challenge ?? payload.CHALLENGE;
 }
 
 async function handleWebhook(request, env, ctx) {
