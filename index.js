@@ -68,7 +68,7 @@ function formatLocalTime() {
   }).format(new Date());
 }
 
-export function formatFeishuMessage(payload) {
+export function formatWeComMessage(payload) {
   const sender = payload.from_user_id || "未知用户";
   const receiver = payload.to_user_id || "当前账号";
   return [
@@ -80,43 +80,20 @@ export function formatFeishuMessage(payload) {
   ].join("\n");
 }
 
-function bytesToBase64(bytes) {
-  let value = "";
-  for (const byte of bytes) value += String.fromCharCode(byte);
-  return btoa(value);
-}
-
-export async function feishuSignature(timestamp, secret) {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(`${timestamp}\n${secret}`),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const signature = await crypto.subtle.sign("HMAC", key, new Uint8Array());
-  return bytesToBase64(new Uint8Array(signature));
-}
-
-async function sendToFeishu(env, payload) {
-  if (!env.FEISHU_WEBHOOK_URL) throw new Error("FEISHU_WEBHOOK_URL is not configured");
+async function sendToWeCom(env, payload) {
+  if (!env.WEWORK_WEBHOOK_URL) throw new Error("WEWORK_WEBHOOK_URL is not configured");
   const outgoing = {
-    msg_type: "text",
-    content: { text: formatFeishuMessage(payload) },
+    msgtype: "text",
+    text: { content: formatWeComMessage(payload) },
   };
-  if (env.FEISHU_SIGN_SECRET) {
-    const timestamp = Math.floor(Date.now() / 1000);
-    outgoing.timestamp = String(timestamp);
-    outgoing.sign = await feishuSignature(timestamp, env.FEISHU_SIGN_SECRET);
-  }
-  const response = await fetch(env.FEISHU_WEBHOOK_URL, {
+  const response = await fetch(env.WEWORK_WEBHOOK_URL, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(outgoing),
   });
   const result = await response.json().catch(() => ({}));
-  if (!response.ok || (result.code ?? result.StatusCode ?? 0) !== 0) {
-    throw new Error(`Feishu rejected message: HTTP ${response.status} ${JSON.stringify(result)}`);
+  if (!response.ok || (result.errcode ?? 0) !== 0) {
+    throw new Error(`WeCom rejected message: HTTP ${response.status} ${JSON.stringify(result)}`);
   }
 }
 
@@ -148,7 +125,7 @@ async function markDelivery(env, dedupeKey, sent, error = "") {
 
 async function deliverAndRecord(env, dedupeKey, payload) {
   try {
-    await sendToFeishu(env, payload);
+    await sendToWeCom(env, payload);
     await markDelivery(env, dedupeKey, true);
   } catch (error) {
     await markDelivery(env, dedupeKey, false, error instanceof Error ? error.message : String(error));
